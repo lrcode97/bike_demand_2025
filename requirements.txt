@@ -1,0 +1,15 @@
+catboost
+lightgbm
+xgboost
+numpy
+pandas
+matplotlib
+shap
+scikit-learn
+ydata-profiling
+plotly
+jupyter
+optuna
+seaborn
+ipywidgets>=7.2
+notebook>=5.3
