@@ -15,17 +15,16 @@ class BikeDemandDataProcessor:
             return None
 
     def preprocess(self, df):
-
         df = df.copy()
 
         # Creating timestamp column
         df['timestamp'] = pd.to_datetime(df['dteday'] + ' ' + df['hr'].astype(str) + ':00:00', format='%d/%m/%Y %H:%M:%S')
 
         # Renaming columns
-        df = df.rename(columns={'hr': 'hour', 'yr' : 'year', 'mnth' : 'month', 'cnt' : 'count'})
+        df = df.rename(columns={'hr': 'hour', 'yr': 'year', 'mnth': 'month', 'cnt': 'count'})
         df = df.drop(['dteday', 'instant'], axis=1)
         
-        # Time features
+        # Extracting time features
         df['year'] = df['timestamp'].dt.year
         df['day'] = df['timestamp'].dt.day_of_year
         df['day_of_week'] = df['timestamp'].dt.day_of_week
@@ -33,7 +32,7 @@ class BikeDemandDataProcessor:
         df['month'] = df['timestamp'].dt.month
         df['week'] = df['timestamp'].dt.isocalendar().week
         
-        # Cyclic encoding
+        # Cyclic encoding for time features
         df['year_sin'] = np.sin(2 * np.pi * df['year'])
         df['year_cos'] = np.cos(2 * np.pi * df['year'])
         df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12) 
@@ -61,7 +60,7 @@ class BikeDemandDataProcessor:
         df['winter_season'] = df['timestamp'].apply(lambda x: 1 if x.month in [12, 1, 2] else 0)
         df['day_of_year'] = df['timestamp'].dt.dayofyear
         
-        # Hour features (rush hour made estimated form visualisations)
+        # Hour features (rush hour estimated from visualisations)
         df['is_business_hours'] = ((df['hour'] >= 8) & (df['hour'] <= 18) & (df['working_day'] == 1)).astype(int)
         df['is_night'] = ((df['hour'] >= 22) | (df['hour'] <= 6)).astype(int)
         df['rush_hour'] = df.apply(lambda x: 1 if ((x['hour'] >= 4 and x['hour'] <= 10) or (x['hour'] >= 15 and x['hour'] <= 21)) and x['working_day'] == 1 else 0, axis=1)
@@ -153,11 +152,11 @@ class BikeDemandDataProcessor:
         train_df['day_ratio'] = train_df['day_of_week'].map(average_day_ratio)
         val_df['day_ratio'] = val_df['day_of_week'].map(average_day_ratio)
 
-        # Mapping working day and weekend registered ratios (could go further and do this for each motnh, week, etc.)
+        # Mapping working day and weekend registered ratios
         train_df['working_day_or_weekend_ratio'] = train_df['working_day'].map(average_working_day_ratio).where(train_df['working_day'] == 1, 
-                                                                                                                        train_df['weekend'].map(average_weekend_ratio))
+                                                                                                                train_df['weekend'].map(average_weekend_ratio))
         val_df['working_day_or_weekend_ratio'] = val_df['working_day'].map(average_working_day_ratio).where(val_df['working_day'] == 1, 
-                                                                                                                    val_df['weekend'].map(average_weekend_ratio))
+                                                                                                            val_df['weekend'].map(average_weekend_ratio))
 
         train_df['week_ratio'] = train_df['week'].map(average_week_ratio)
         val_df['week_ratio'] = val_df['week'].map(average_week_ratio)
@@ -172,7 +171,6 @@ class BikeDemandDataProcessor:
         train_df = train_df.drop(['casual', 'registered'], axis=1)
         val_df = val_df.drop(['casual', 'registered'], axis=1)
 
-        ## An idea to try and project outliers into the future as I saw some seemed to be repeated so maybe a notable event of som sort
         # Aggregate counts to daily level
         daily_train_df = train_df.groupby(['year', 'month', 'day', 'day_of_year'])[['count']].sum().reset_index()
 
@@ -191,7 +189,7 @@ class BikeDemandDataProcessor:
         train_df = train_df.merge(day_of_year_outlier, on='day_of_year', how='left')
         val_df = val_df.merge(day_of_year_outlier, on='day_of_year', how='left')
 
-        # Fill NaN values (if no outlier was detected for that day, assume False)
+        # Fill NaN values (if no outlier was detected for that day)
         train_df['sigma_3_outlier'] = train_df['sigma_3_outlier'].fillna(0)
         val_df['sigma_3_outlier'] = val_df['sigma_3_outlier'].fillna(0)
 
@@ -199,20 +197,19 @@ class BikeDemandDataProcessor:
             
     def split_and_engineer_data(self, df, test_period=None):
         if test_period is None:
-            test_period = 28 * 24  # Default to 14 days of hourly data
+            test_period = 28 * 24  # Default to 28 days of hourly data
         sorted_df = df.sort_values('timestamp').copy()
-        # sorted_df = sorted_df.drop('timestamp', axis=1)
 
-        original_shape = sorted_df.drop(['casual', 'registered'], axis = 1).shape  # Store original shape
+        original_shape = sorted_df.drop(['casual', 'registered'], axis=1).shape  # Store original shape
 
-        # Creating a Test DF for a final test
+        # Creating a Test DF
         train_df = sorted_df.iloc[:-test_period].copy()
         val_df = sorted_df.iloc[-test_period:].copy()
 
         train_df, val_df = self.feature_engineering(train_df, val_df)
 
         # Ensure row count is unchanged when reducing back to original columns
-        original_columns = sorted_df.drop(['casual', 'registered'], axis = 1).columns.tolist()
+        original_columns = sorted_df.drop(['casual', 'registered'], axis=1).columns.tolist()
         
         reduced_train = train_df[original_columns]
         reduced_val = val_df[original_columns]
