@@ -15,34 +15,29 @@ This project is a starting point for the Bike Demand Prediction using Python. It
 ## Installation
 
 1. Clone the repository:
-    ```
+    ```sh
     git clone https://github.com/yourusername/bike_demand_prediction.git
     ```
 2. Change to the project directory:
-    ```
+    ```sh
     cd bike_demand_prediction
     ```
 3. Create and activate a virtual environment:
+
+    **On Windows:**
+    ```sh
+    python -m venv venv
+    venv\Scripts\activate
     ```
+
+    **On macOS and Linux:**
+    ```sh
     python3 -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+    source venv/bin/activate
     ```
+
 4. Install dependencies:
-    ```
+    ```sh
     pip install -r requirements.txt
     ```
 
-## Usage
-
-Run the main script with:
-```
-python main.py
-```
-
-## Contributing
-
-Contributions are welcome! Please open an issue or pull request for any improvements or bugs.
-
-## License
-
-Distributed under the MIT License. See `LICENSE` for more information.
