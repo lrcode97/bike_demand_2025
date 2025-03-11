@@ -88,6 +88,15 @@ class BikeDemandDataProcessor:
         # Temperature difference feature
         df['temp_atemp_diff'] = np.abs(df['temp'] - df['atemp'])
 
+        # Creating 28-day lag of the count
+        df['count_lag_28d'] = df['count'].shift(28 * 24)
+
+        # Creating 1-year lag of the count
+        df['count_lag_1y'] = df['count'].shift(365 * 24)
+
+        df['count_lag_28d'] = df['count_lag_28d'].ffill().bfill()
+        df['count_lag_1y'] = df['count_lag_1y'].ffill().bfill()
+
         # Convert object columns to category
         for col in df.select_dtypes(include='object').columns:
             df[col] = df[col].astype('category')
@@ -213,3 +222,9 @@ class BikeDemandDataProcessor:
         assert combined_df.shape == original_shape, "Row count mismatch after feature engineering!"
 
         return train_df, val_df
+    
+def inverse_boxcox(y_transformed, lambda_value):
+    if lambda_value == 0:
+        return np.exp(y_transformed) - 1
+    else:
+        return (y_transformed * lambda_value + 1) ** (1 / lambda_value) - 1
